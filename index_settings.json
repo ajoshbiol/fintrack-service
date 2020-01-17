@@ -32,13 +32,7 @@
                 }
             },
             "date": {
-                "type": "text",
-                "fields": {
-                    "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                    }
-                }
+                "type": "date"
             },
             "description": {
                 "type": "text",

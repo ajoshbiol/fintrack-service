@@ -1,7 +1,9 @@
 import json
-from flask import Flask
-from flask import request
+from flask import Flask, request
+from flask_cors import CORS, cross_origin
 app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 response_type = { 'ContentType':'application/json' }
 
@@ -26,6 +28,7 @@ def validate(data):
         raise Exception('Invalid classification.')
 
 @app.route('/', methods = ['GET', 'POST', 'DELETE'])
+@cross_origin()
 def transactions():
     if request.method == 'GET':
         try:

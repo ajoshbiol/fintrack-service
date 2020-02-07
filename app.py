@@ -10,11 +10,14 @@ response_type = { 'ContentType':'application/json' }
 from elasticsearch import Elasticsearch, helpers
 es = Elasticsearch()
 
-index_name = 'transactions'
-with open('index_settings.json') as settings_file:
-    index_settings = json.load(settings_file)
+def init():
+    index_name = 'transactions'
+    with open('index_settings.json') as settings_file:
+        index_settings = json.load(settings_file)
 
-es.indices.create(index=index_name, body=index_settings, ignore=400)
+    es.indices.create(index=index_name, body=index_settings, ignore=400)
+
+init();
 
 def validate(data):
     """Function to validate transaction data"""
@@ -27,9 +30,44 @@ def validate(data):
     if data['classification'] not in classifications:
         raise Exception('Invalid classification.')
 
-@app.route('/', methods = ['GET', 'POST', 'DELETE'])
+@app.route('/categories', methods = ['GET'])
+@cross_origin()
+def categories():
+    index_name = 'categories'
+    query = {
+        "query": {
+            "match_all": {}
+        }
+    }
+    try:
+        res = es.search(index=index_name, body=query)
+        print(res)
+        return {'categories' : res['hits']['hits']}, 200, \
+            response_type
+    except Exception as e:
+        return json.dumps({'message' : str(e)}), 500, response_type
+
+@app.route('/accounts', methods = ['GET'])
+@cross_origin()
+def accounts():
+    index_name = 'accounts'
+    query = {
+        "query": {
+            "match_all": {}
+        }
+    }
+    try:
+        res = es.search(index=index_name, body=query)
+        print(res)
+        return {'accounts' : res['hits']['hits']}, 200, \
+            response_type
+    except Exception as e:
+        return json.dumps({'message' : str(e)}), 500, response_type
+
+@app.route('/transactions', methods = ['GET', 'POST', 'DELETE'])
 @cross_origin()
 def transactions():
+    index_name = 'transactions'
     if request.method == 'GET':
         try:
             ts = request.args.get('ts')
@@ -68,7 +106,6 @@ def transactions():
                 response_type
         except Exception as e:
             return json.dumps({'message' : str(e)}), 500, response_type  
-        return "Hello"
     if request.method == 'POST':
         data = json.loads(request.data.decode('utf-8'))
         try:
@@ -77,7 +114,8 @@ def transactions():
             return json.dumps({'message' : str(e)}), 400, response_type  
 
         try:
-            res = es.index(index=index_name, doc_type='_doc', body=data)
+            res = es.index(index=index_name, doc_type='_doc', body=data, 
+                refresh="true")
         except Exception as e:
             return json.dumps({'message' : str(e)}), 500, response_type  
 
@@ -95,11 +133,11 @@ def transactions():
         ]
 
         try:
-            helpers.bulk(es, actions)
+            helpers.bulk(es, actions, refresh="true")
             return json.dumps({'message' : 'success'}), 200, response_type  
         except Exception as e:
             return json.dumps({'message' : str(e)}), 500, response_type
     
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')

@@ -113,11 +113,20 @@ def transactions():
         except Exception as e:
             return json.dumps({'message' : str(e)}), 400, response_type  
 
-        try:
-            res = es.index(index=index_name, doc_type='_doc', body=data, 
-                refresh="true")
-        except Exception as e:
-            return json.dumps({'message' : str(e)}), 500, response_type  
+        if 'id' in data:
+            id = data['id']
+            del data['id']
+            try:
+                res = es.index(index=index_name, doc_type='_doc', body=data, 
+                    refresh="true", id=id)
+            except Exception as e:
+                return json.dumps({'message' : str(e)}), 500, response_type  
+        else:
+            try:
+                res = es.index(index=index_name, doc_type='_doc', body=data, 
+                    refresh="true")
+            except Exception as e:
+                return json.dumps({'message' : str(e)}), 500, response_type  
 
         return json.dumps({'message' : 'success'}), 200, response_type  
     if request.method == 'DELETE':
